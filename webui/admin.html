@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理后台 — 装修AI帮手</title>
+<style>
+:root {
+  --bg: #e8e0d6;
+  --card: #f0e8de;
+  --card-shadow: 0 2px 12px rgba(100,80,60,0.1);
+  --card-hover: 0 6px 20px rgba(100,80,60,0.16);
+  --text: #3d3530;
+  --text-sub: #7a6e64;
+  --text-light: #a89888;
+  --accent: #c06030;
+  --accent-light: #e8a070;
+  --accent-hover: #a84820;
+  --border: #d8cec4;
+  --border-light: #e0d6cc;
+  --warm-white: #f2ebe2;
+  --success: #5aad6a;
+  --danger: #d45050;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6;
+}
+
+.header {
+  background: linear-gradient(135deg, #3a2718, #5b3f2a, #7b5b40);
+  color: #fff; padding: 18px 40px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.header h1 { font-size: 18px; font-weight: 600; }
+.header a { color: rgba(255,255,255,0.7); font-size: 13px; text-decoration: none; }
+.header a:hover { color: #fff; }
+
+.nav {
+  background: var(--card); padding: 0 40px;
+  border-bottom: 1px solid var(--border);
+  display: flex; overflow-x: auto;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+}
+.nav-btn {
+  padding: 14px 20px; border: none; background: none;
+  cursor: pointer; font-size: 14px; color: var(--text-sub);
+  border-bottom: 3px solid transparent;
+  transition: all 0.25s; white-space: nowrap; flex-shrink: 0;
+}
+.nav-btn:hover { color: var(--accent); }
+.nav-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+
+.content { padding: 28px 40px; }
+.page { display: none; }
+.page.active { display: block; }
+
+.config-panel {
+  background: var(--card); border-radius: 14px;
+  padding: 24px; margin-bottom: 20px;
+  box-shadow: var(--card-shadow); border: 1px solid var(--border-light);
+}
+.config-panel h3 { font-size: 16px; margin-bottom: 16px; color: var(--text); }
+
+.form-row { display: flex; align-items: center; margin-bottom: 12px; gap: 12px; }
+.form-row label { width: 100px; font-size: 14px; color: var(--text-sub); text-align: right; flex-shrink: 0; }
+.form-row input, .form-row select {
+  flex: 1; padding: 10px 14px; border: 1px solid var(--border);
+  border-radius: 8px; font-size: 14px; background: var(--warm-white);
+  color: var(--text); outline: none;
+}
+.form-row input:focus { border-color: var(--accent); }
+
+.btn {
+  padding: 10px 22px; border: none; border-radius: 8px;
+  cursor: pointer; font-size: 14px; transition: all 0.2s;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-success { background: var(--success); color: #fff; }
+.btn-outline { background: none; border: 1px solid var(--border); color: var(--text-sub); }
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+.btn-sm { padding: 6px 14px; font-size: 12px; }
+
+.log-box {
+  background: #2c2420; color: #d4c8b8; border-radius: 10px;
+  padding: 16px; font-family: 'Consolas', monospace; font-size: 13px;
+  max-height: 300px; overflow-y: auto; line-height: 1.8;
+}
+.log-info { color: #8ab4f8; }
+.log-success { color: #81c995; }
+.log-warn { color: #fdd663; }
+.log-error { color: #f28b82; }
+
+/* Pipeline */
+.pipeline-wrap { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin: 16px 0; }
+.pipeline-card {
+  background: var(--warm-white); border: 2px solid var(--border);
+  border-radius: 12px; padding: 16px; width: 150px; text-align: center;
+  transition: all 0.3s;
+}
+.pipeline-card.running { border-color: #d48a30; background: #fdf6ec; }
+.pipeline-card.done { border-color: #5aad6a; background: #f0faf2; }
+.pipeline-card.error { border-color: #d45050; background: #fdf0f0; }
+.pipeline-icon { font-size: 28px; margin-bottom: 6px; }
+.pipeline-name { font-weight: 600; font-size: 14px; }
+.pipeline-status { font-size: 12px; color: var(--text-light); margin-top: 4px; }
+
+/* Projects */
+.proj-table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; }
+.proj-table th { background: var(--warm-white); padding: 12px 16px; font-size: 13px; text-align: left; color: var(--text-sub); font-weight: 600; }
+.proj-table td { padding: 12px 16px; border-top: 1px solid var(--border-light); font-size: 14px; }
+.proj-table tr:hover { background: var(--warm-white); }
+
+.badge { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 500; }
+
+/* Modal */
+.modal-overlay {
+  display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(60,50,40,0.45); backdrop-filter: blur(4px);
+  z-index: 1000; align-items: center; justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: var(--card); border-radius: 16px; padding: 30px;
+  width: 560px; max-height: 80vh; overflow-y: auto;
+  box-shadow: 0 16px 48px rgba(60,40,20,0.2); border: 1px solid var(--border);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .content { padding: 16px; }
+  .header { padding: 14px 16px; }
+  .nav { padding: 0 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- 登录遮罩 -->
+<div id="login-overlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:2000;display:flex;align-items:center;justify-content:center;">
+  <div style="background:var(--card);border-radius:16px;padding:40px;width:380px;box-shadow:0 16px 48px rgba(60,40,20,0.2);text-align:center;">
+    <div style="font-size:36px;margin-bottom:12px;">🔐</div>
+    <h2 style="font-size:18px;margin-bottom:8px;">管理后台登录</h2>
+    <p style="font-size:13px;color:var(--text-sub);margin-bottom:24px;">请输入管理员密码</p>
+    <input type="password" id="login-pwd" placeholder="输入密码" style="width:100%;padding:12px 16px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--warm-white);color:var(--text);outline:none;margin-bottom:16px;" onkeydown="if(event.key==='Enter')doLogin()">
+    <div id="login-error" style="color:var(--danger);font-size:13px;margin-bottom:12px;display:none;">密码错误</div>
+    <button class="btn btn-primary" onclick="doLogin()" style="width:100%;padding:12px;">登 录</button>
+    <div style="margin-top:16px;font-size:12px;color:var(--text-light);">默认密码：admin</div>
+  </div>
+</div>
+
+<div class="header">
+  <h1>装修AI帮手 — 管理后台</h1>
+  <a href="/">← 返回客户端</a>
+</div>
+
+<div class="nav">
+  <button class="nav-btn active" onclick="showPage('pipeline')">协作流水线</button>
+  <button class="nav-btn" onclick="showPage('projects')">项目管理</button>
+  <button class="nav-btn" onclick="showPage('config')">系统配置</button>
+  <button class="nav-btn" onclick="showPage('api')">AI 设置</button>
+  <button class="nav-btn" onclick="showPage('templates')">模板中心</button>
+  <button class="nav-btn" onclick="showPage('log')">运行日志</button>
+</div>
+
+<div class="content">
+
+  <!-- 协作流水线 -->
+  <div class="page active" id="page-pipeline">
+    <div class="config-panel">
+      <h3>五Agent协作流水线</h3>
+      <p style="color:var(--text-sub);font-size:13px;margin-bottom:16px;">依次运行五个Agent，模拟完整工作流程。雷虎审核不通过则会阻塞流程。</p>
+      <div style="display:flex;gap:12px;justify-content:center;margin-bottom:16px;">
+        <button class="btn btn-primary" onclick="runPipeline()">运行完整流水线</button>
+        <button class="btn" style="background:#f0f0f0;" onclick="resetPipeline()">重置</button>
+      </div>
+      <div class="pipeline-wrap" id="pipeline-cards"></div>
+    </div>
+    <div class="config-panel">
+      <h3>运行日志</h3>
+      <div class="log-box" id="pipeline-log"></div>
+    </div>
+  </div>
+
+  <!-- 项目管理 -->
+  <div class="page" id="page-projects">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <h3 style="font-size:18px;">项目列表</h3>
+      <button class="btn btn-primary" onclick="showAddProject()">＋ 新建项目</button>
+    </div>
+    <table class="proj-table">
+      <thead><tr><th>客户</th><th>楼盘</th><th>户型</th><th>金额</th><th>节点</th><th>操作</th></tr></thead>
+      <tbody id="project-tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- 系统配置 -->
+  <div class="page" id="page-config">
+    <div class="config-panel">
+      <h3>公司信息配置</h3>
+      <div class="form-row"><label>公司名称</label><input type="text" id="cfg-name" placeholder="输入公司名称"></div>
+      <div class="form-row"><label>公司地址</label><input type="text" id="cfg-addr" placeholder="输入公司地址"></div>
+      <div class="form-row"><label>联系电话</label><input type="text" id="cfg-phone" placeholder="输入联系电话"></div>
+      <div class="form-row"><label>负责人</label><input type="text" id="cfg-owner" placeholder="输入负责人姓名"></div>
+    </div>
+    <div class="config-panel">
+      <h3>Agent 参数配置</h3>
+      <div id="agent-cfgs"></div>
+    </div>
+    <div style="text-align:center;padding:20px;">
+      <button class="btn btn-success" onclick="saveConfig()">保存配置到本地</button>
+    </div>
+  </div>
+
+  <!-- AI 设置 -->
+  <div class="page" id="page-api">
+    <!-- 混合模式状态 -->
+    <div class="config-panel">
+      <h3>AI 服务状态（混合模式）</h3>
+      <p style="color:var(--text-sub);font-size:13px;margin-bottom:16px;">
+        系统会<strong>优先使用云端AI</strong>（速度快、效果好），云端不可用时<strong>自动降级到本地Ollama</strong>（离线可用）。
+      </p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:10px;background:var(--warm-white);border:1px solid var(--border-light);">
+          <div id="cloud-status-dot" style="width:12px;height:12px;border-radius:50%;background:#d45050;"></div>
+          <div>
+            <div style="font-weight:600;font-size:14px;">云端 AI</div>
+            <div id="cloud-status-text" style="font-size:12px;color:var(--text-light);">未配置</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:10px;background:var(--warm-white);border:1px solid var(--border-light);">
+          <div id="ollama-status-dot" style="width:12px;height:12px;border-radius:50%;background:#d45050;"></div>
+          <div>
+            <div style="font-weight:600;font-size:14px;">本地 Ollama</div>
+            <div id="ollama-status-text" style="font-size:12px;color:var(--text-light);">未检测到</div>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:14px;">
+        <button class="btn btn-outline" onclick="testAPIConnection()">测试连接</button>
+      </div>
+    </div>
+
+    <div class="config-panel" style="border:2px solid var(--accent);">
+      <h3 style="color:var(--accent);">推荐：免费注册 AI 服务</h3>
+      <p style="color:var(--text-sub);font-size:13px;margin-bottom:16px;">
+        以下服务提供<strong>免费额度</strong>，注册后获取 API Key 即可使用。
+      </p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:20px;">
+        <div style="background:var(--warm-white);border:1px solid var(--border-light);border-radius:10px;padding:16px;">
+          <div style="font-weight:700;font-size:15px;margin-bottom:6px;">Groq（推荐）</div>
+          <div style="font-size:12px;color:var(--text-sub);line-height:1.8;margin-bottom:10px;">
+            免费额度：每天 14400 次请求<br>模型：Llama 3、Mixtral 等<br>速度：极快（专用芯片加速）
+          </div>
+          <a href="https://console.groq.com/keys" target="_blank" style="color:var(--accent);font-size:13px;">注册获取 API Key →</a>
+        </div>
+        <div style="background:var(--warm-white);border:1px solid var(--border-light);border-radius:10px;padding:16px;">
+          <div style="font-weight:700;font-size:15px;margin-bottom:6px;">硅基流动 SiliconFlow</div>
+          <div style="font-size:12px;color:var(--text-sub);line-height:1.8;margin-bottom:10px;">
+            免费额度：注册送 14 元<br>模型：Qwen、DeepSeek 等<br>国内访问，速度快
+          </div>
+          <a href="https://cloud.siliconflow.cn/account/ak" target="_blank" style="color:var(--accent);font-size:13px;">注册获取 API Key →</a>
+        </div>
+        <div style="background:var(--warm-white);border:1px solid var(--border-light);border-radius:10px;padding:16px;">
+          <div style="font-weight:700;font-size:15px;margin-bottom:6px;">小米 MiMo Token Plan</div>
+          <div style="font-size:12px;color:var(--text-sub);line-height:1.8;margin-bottom:10px;">
+            免费额度：注册即送<br>模型：mimo-v2.5-pro<br>国产模型，中文优秀
+          </div>
+          <a href="https://token-plan-cn.xiaomimimo.com" target="_blank" style="color:var(--accent);font-size:13px;">注册获取 API Key →</a>
+        </div>
+      </div>
+      <div style="background:var(--warm-white);border:1px solid var(--border-light);border-radius:10px;padding:16px;">
+        <div style="font-weight:600;margin-bottom:12px;">已有 API Key？快速配置：</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+          <button class="btn btn-sm btn-outline" onclick="presetAPI('groq')">Groq</button>
+          <button class="btn btn-sm btn-outline" onclick="presetAPI('siliconflow')">硅基流动</button>
+          <button class="btn btn-sm btn-outline" onclick="presetAPI('mimo')">小米 MiMo</button>
+        </div>
+        <div class="form-row"><label>API 地址</label><input type="text" id="api-base" placeholder="https://api.groq.com/openai/v1"></div>
+        <div class="form-row"><label>API Key</label><input type="password" id="api-key" placeholder="gsk_... 或 sk-..."></div>
+        <div class="form-row"><label>模型名称</label><input type="text" id="api-model" placeholder="llama-3.3-70b-versatile"></div>
+        <div style="text-align:center;padding:12px;">
+          <button class="btn btn-primary" onclick="saveAPIConfig()">保存并测试</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="config-panel">
+      <h3>本地 Ollama（完全离线）</h3>
+      <div style="font-size:13px;color:var(--text-sub);line-height:2;">
+        <div>1. 安装 Ollama：<code style="background:var(--warm-white);padding:2px 6px;border-radius:4px;">ollama.com</code></div>
+        <div>2. 拉取小模型：<code style="background:var(--warm-white);padding:2px 6px;border-radius:4px;">ollama pull qwen2.5:1.5b</code></div>
+        <div>3. 启动本系统后端：<code style="background:var(--warm-white);padding:2px 6px;border-radius:4px;">双击「启动服务.bat」</code></div>
+        <div>4. API 设置中预设选「Ollama」，保存即可</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 模板中心 -->
+  <div class="page" id="page-templates">
+    <h3 style="font-size:18px;margin-bottom:16px;">模板中心（位于 templates/ 目录）</h3>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;" id="tpl-cards"></div>
+  </div>
+
+  <!-- 运行日志 -->
+  <div class="page" id="page-log">
+    <div class="config-panel">
+      <h3>系统运行日志</h3>
+      <div class="log-box" id="system-log"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 新建项目弹窗 -->
+<div class="modal-overlay" id="modal-project">
+  <div class="modal">
+    <h3>新建项目</h3>
+    <div class="form-row"><label>客户姓名</label><input type="text" id="proj-client" placeholder="输入客户姓名"></div>
+    <div class="form-row"><label>联系电话</label><input type="text" id="proj-phone" placeholder="输入联系电话"></div>
+    <div class="form-row"><label>楼盘名称</label><input type="text" id="proj-building" placeholder="输入楼盘名称"></div>
+    <div class="form-row"><label>户型</label><input type="text" id="proj-layout" placeholder="如：三室两厅一卫"></div>
+    <div class="form-row"><label>面积(㎡)</label><input type="number" id="proj-area" placeholder="输入面积"></div>
+    <div class="form-row"><label>合同金额</label><input type="number" id="proj-amount" placeholder="输入合同金额(元)"></div>
+    <div class="form-row"><label>装修风格</label><input type="text" id="proj-style" placeholder="如：现代简约"></div>
+    <div style="text-align:center;padding:20px;">
+      <button class="btn btn-primary" onclick="addProject()">创建项目</button>
+      <button class="btn" style="background:#f0f0f0;margin-left:8px;" onclick="closeModal('modal-project')">取消</button>
+    </div>
+  </div>
+</div>
+
+<script src="rough.min.js"></script>
+<script src="app.js"></script>
+<script>
+// ========== 页面切换 ==========
+function showPage(pageId) {
+  var pages = document.querySelectorAll('.page');
+  for (var i = 0; i < pages.length; i++) pages[i].classList.remove('active');
+  var target = document.getElementById('page-' + pageId);
+  if (target) target.classList.add('active');
+  var btns = document.querySelectorAll('.nav-btn');
+  for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
+  for (var i = 0; i < btns.length; i++) {
+    if (btns[i].getAttribute('onclick') && btns[i].getAttribute('onclick').indexOf("'" + pageId + "'") >= 0) {
+      btns[i].classList.add('active');
+      break;
+    }
+  }
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+// ========== 管理登录 ==========
+var ADMIN_PWD = 'admin';
+
+function checkLogin() {
+  var token = sessionStorage.getItem('admin-token');
+  if (token === ADMIN_PWD) {
+    document.getElementById('login-overlay').style.display = 'none';
+    return true;
+  }
+  return false;
+}
+
+function doLogin() {
+  var pwd = document.getElementById('login-pwd').value;
+  if (pwd === ADMIN_PWD) {
+    sessionStorage.setItem('admin-token', pwd);
+    document.getElementById('login-overlay').style.display = 'none';
+  } else {
+    var err = document.getElementById('login-error');
+    err.style.display = 'block';
+    document.getElementById('login-pwd').value = '';
+    document.getElementById('login-pwd').focus();
+  }
+}
+
+// ========== 初始化 ==========
+function init() {
+  checkLogin();
+  try {
+    var c = localStorage.getItem('decoration-config');
+    if (c) config = JSON.parse(c);
+    var p = localStorage.getItem('decoration-projects');
+    if (p) projects = JSON.parse(p);
+  } catch(e) {}
+  renderPipelineCards();
+  renderAgentConfigs();
+  renderProjects();
+  renderTemplates();
+  renderLog();
+  document.getElementById('cfg-name').value = config.company.name || '';
+  document.getElementById('cfg-addr').value = config.company.address || '';
+  document.getElementById('cfg-phone').value = config.company.phone || '';
+  document.getElementById('cfg-owner').value = config.company.owner || '';
+  // 检测后端
+  testBackendConnection().then(function(ok) {
+    if (ok) loadAPIConfig();
+  });
+}
+init();
+</script>
+</body>
+</html>

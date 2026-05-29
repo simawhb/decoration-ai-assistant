@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+*.log
+api_config.json
+runtime/ollama.exe
+models/*.gguf
+models/*.bin

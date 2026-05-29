@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>装修AI帮手</title>
+<style>
+:root {
+  --bg: #e8e0d6;
+  --card: #f0e8de;
+  --card-shadow: 0 2px 12px rgba(100,80,60,0.1);
+  --card-hover: 0 6px 20px rgba(100,80,60,0.16);
+  --text: #3d3530;
+  --text-sub: #7a6e64;
+  --text-light: #a89888;
+  --accent: #c06030;
+  --accent-light: #e8a070;
+  --accent-hover: #a84820;
+  --border: #d8cec4;
+  --border-light: #e0d6cc;
+  --warm-white: #f2ebe2;
+  --scout: #4a90d9;
+  --digit: #5aad6a;
+  --nova: #d45a8a;
+  --lex: #d48a30;
+  --memo: #8a6abf;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+/* ===== 顶栏 ===== */
+.header {
+  background: linear-gradient(135deg, #4a3728, #6b4f3a, #8b6b50);
+  color: #fff;
+  padding: 22px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.header h1 { font-size: 22px; font-weight: 600; letter-spacing: 1px; }
+.header .subtitle { font-size: 13px; opacity: 0.75; margin-top: 5px; letter-spacing: 0.5px; }
+
+/* ===== 导航 ===== */
+.nav {
+  background: var(--card);
+  padding: 0 40px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  overflow-x: auto;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+}
+.nav-btn {
+  padding: 16px 22px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-sub);
+  border-bottom: 3px solid transparent;
+  transition: all 0.25s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  letter-spacing: 0.3px;
+}
+.nav-btn:hover { color: var(--accent); }
+.nav-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+
+/* ===== 内容区 ===== */
+.content { padding: 28px 40px; }
+.page { display: none; }
+.page.active { display: block; }
+
+/* ===== 首页统计（保留供内部页面用） ===== */
+.stats-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 16px; margin-bottom: 28px; }
+.stat-card {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 22px;
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--border-light);
+}
+.stat-num { font-size: 30px; font-weight: 700; color: var(--accent); }
+.stat-label { font-size: 13px; color: var(--text-sub); margin-top: 4px; }
+
+/* ===== 首页（客户端） ===== */
+.home-banner {
+  background: linear-gradient(135deg, #4a3728, #6b4f3a, #8b6b50);
+  border-radius: 16px; padding: 48px 40px; margin-bottom: 28px;
+  color: #fff; text-align: center;
+}
+.home-banner h2 { font-size: 28px; font-weight: 700; margin-bottom: 8px; letter-spacing: 2px; }
+.home-slogan { font-size: 16px; opacity: 0.9; margin-bottom: 10px; letter-spacing: 1px; }
+.home-desc { font-size: 14px; opacity: 0.75; max-width: 500px; margin: 0 auto; }
+
+.home-section { margin-bottom: 28px; }
+.home-section-title {
+  font-size: 22px; font-weight: 700; color: var(--text);
+  margin-bottom: 20px; padding-left: 14px;
+  border-left: 4px solid var(--accent);
+  letter-spacing: 0.5px;
+}
+
+.home-advantages { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+.home-adv-card {
+  background: var(--card); border-radius: 14px; padding: 24px 18px;
+  text-align: center; box-shadow: var(--card-shadow); border: 1px solid var(--border-light);
+  transition: transform 0.2s;
+}
+.home-adv-card:hover { transform: translateY(-3px); }
+.home-adv-icon { font-size: 32px; margin-bottom: 10px; }
+.home-adv-card h4 { font-size: 15px; margin-bottom: 8px; color: var(--text); }
+.home-adv-card p { font-size: 13px; color: var(--text-sub); line-height: 1.6; }
+
+.home-team-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 16px; }
+.home-team-card {
+  background: var(--card); border-radius: 14px; padding: 22px 14px;
+  text-align: center; box-shadow: var(--card-shadow); border: 1px solid var(--border-light);
+  transition: transform 0.2s;
+}
+.home-team-card:hover { transform: translateY(-3px); }
+.home-team-avatar { font-size: 36px; margin-bottom: 10px; }
+.home-team-name { font-size: 16px; font-weight: 600; color: var(--text); }
+.home-team-role { font-size: 13px; color: var(--accent); margin-bottom: 8px; font-weight: 500; }
+.home-team-card p { font-size: 12px; color: var(--text-sub); line-height: 1.6; }
+
+.home-flow {
+  display: flex; align-items: center; justify-content: center;
+  gap: 12px; flex-wrap: wrap;
+  background: var(--card); border-radius: 14px; padding: 28px 24px;
+  box-shadow: var(--card-shadow); border: 1px solid var(--border-light);
+}
+.home-flow-step {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.home-flow-num {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--accent); color: #fff; font-size: 14px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.home-flow-step span:last-child { font-size: 13px; color: var(--text); font-weight: 500; }
+.home-flow-arrow { font-size: 18px; color: var(--text-light); }
+
+.home-guide-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; }
+.home-guide-card {
+  background: var(--card); border-radius: 14px; padding: 20px;
+  display: flex; gap: 16px; align-items: flex-start;
+  box-shadow: var(--card-shadow); border: 1px solid var(--border-light);
+}
+.home-guide-num {
+  width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+  background: var(--accent); color: #fff; font-size: 16px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.home-guide-content h4 { font-size: 15px; margin-bottom: 6px; color: var(--text); }
+.home-guide-content p { font-size: 13px; color: var(--text-sub); line-height: 1.7; }
+
+/* ===== Agent 卡片 ===== */
+.agent-card {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 20px 16px;
+  text-align: center;
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--border-light);
+  transition: all 0.3s;
+  position: relative;
+}
+.agent-card:hover { transform: translateY(-4px); box-shadow: var(--card-hover); }
+.agent-icon { font-size: 34px; margin-bottom: 10px; }
+.agent-name { font-size: 17px; font-weight: 700; margin-bottom: 4px; color: var(--text); }
+.agent-role { font-size: 12px; color: var(--text-sub); margin-bottom: 6px; }
+.agent-temp { font-size: 12px; color: var(--text-light); }
+.agent-status { position: absolute; top: 12px; right: 12px; width: 10px; height: 10px; border-radius: 50%; background: #5aad6a; }
+
+/* ===== 流水线 ===== */
+.pipeline-wrap { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.pipeline-card {
+  width: 150px;
+  background: var(--card);
+  border-radius: 14px;
+  padding: 14px;
+  text-align: center;
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--border-light);
+  position: relative;
+}
+.pipeline-card .astatus { position: absolute; top: 10px; right: 10px; width: 10px; height: 10px; border-radius: 50%; }
+.pipeline-arrow { font-size: 20px; color: var(--text-light); }
+
+/* ===== 表单 ===== */
+.form-row { display: flex; align-items: center; margin-bottom: 14px; }
+.form-row label { width: 140px; font-size: 14px; color: var(--text-sub); flex-shrink: 0; }
+.form-row input, .form-row select {
+  flex: 1;
+  padding: 9px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  background: var(--warm-white);
+  color: var(--text);
+  transition: border-color 0.2s;
+}
+.form-row input:focus, .form-row select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(192,96,48,0.1); }
+
+/* ===== 按钮 ===== */
+.btn {
+  padding: 8px 22px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+  letter-spacing: 0.3px;
+}
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: var(--accent-hover); box-shadow: 0 2px 8px rgba(192,96,48,0.3); }
+.btn-success { background: #5aad6a; color: white; }
+.btn-success:hover { background: #4a9a5a; }
+.btn-sm { padding: 4px 14px; font-size: 12px; border-radius: 6px; }
+.btn-danger { background: #d45050; color: white; }
+.btn-danger:hover { background: #b84040; }
+.btn-outline { background: var(--card); border: 1px solid var(--border); color: var(--text-sub); }
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ===== 面板 ===== */
+.config-panel {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--border-light);
+}
+.config-panel h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text);
+}
+
+/* ===== 日志 ===== */
+.log-box {
+  background: #2a221c;
+  color: #d0c4b4;
+  padding: 16px;
+  border-radius: 10px;
+  font-family: 'Consolas', 'Menlo', monospace;
+  font-size: 13px;
+  height: 300px;
+  overflow-y: auto;
+  line-height: 1.7;
+}
+
+/* ===== 表格 ===== */
+.proj-table {
+  width: 100%;
+  background: var(--card);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--card-shadow);
+  border-collapse: collapse;
+  border: 1px solid var(--border-light);
+}
+.proj-table th {
+  background: #e5dcd2;
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 13px;
+  color: var(--text-sub);
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+}
+.proj-table td {
+  padding: 12px 16px;
+  font-size: 14px;
+  border-bottom: 1px solid var(--border-light);
+}
+.badge { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 12px; }
+.badge-normal { background: #edf7ee; color: #5aad6a; border: 1px solid #b8dfbe; }
+.badge-warn { background: #fef6e6; color: #d48a30; border: 1px solid #f0d49a; }
+.badge-danger { background: #fde8e8; color: #d45050; border: 1px solid #f0b8b8; }
+
+/* ===== 弹窗 ===== */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(60,50,40,0.45);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 30px;
+  width: 560px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 16px 48px rgba(60,40,20,0.2);
+  border: 1px solid var(--border);
+}
+
+/* ===== 对话页面 ===== */
+.chat-container { display: flex; gap: 20px; }
+.chat-input-area { flex: 1; min-width: 0; }
+.chat-output-area { flex: 1; min-width: 0; }
+.chat-box {
+  background: var(--card);
+  border-radius: 14px;
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  height: 600px;
+}
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  background: #ebe3d9;
+  border-radius: 14px 14px 0 0;
+}
+.chat-input-row {
+  display: flex;
+  padding: 14px 16px;
+  border-top: 1px solid var(--border-light);
+  gap: 12px;
+  background: var(--card);
+  border-radius: 0 0 14px 14px;
+}
+.chat-input-row textarea {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px;
+  resize: none;
+  height: 60px;
+  font-family: inherit;
+  background: var(--warm-white);
+  color: var(--text);
+  transition: border-color 0.2s;
+}
+.chat-input-row textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(192,96,48,0.08); }
+.chat-input-row textarea::placeholder { color: var(--text-light); }
+
+/* Agent 回复 */
+.agent-response {
+  background: var(--warm-white);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border-left: 4px solid var(--text-sub);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.agent-response.scout  { border-left-color: var(--scout); background: linear-gradient(135deg, #e6edf5, #ede5db); }
+.agent-response.digit  { border-left-color: var(--digit); background: linear-gradient(135deg, #e5f0e6, #ede5db); }
+.agent-response.nova   { border-left-color: var(--nova); background: linear-gradient(135deg, #f2e4ea, #ede5db); }
+.agent-response.lex    { border-left-color: var(--lex); background: linear-gradient(135deg, #f0e6d8, #ede5db); }
+.agent-response.memo   { border-left-color: var(--memo); background: linear-gradient(135deg, #eae2f0, #ede5db); }
+.agent-resp-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.agent-resp-name { font-weight: 700; font-size: 15px; }
+.agent-resp-role { font-size: 12px; color: var(--text-light); }
+.agent-resp-body { font-size: 14px; line-height: 1.8; color: var(--text); }
+.agent-resp-body ul { padding-left: 20px; }
+.agent-resp-body li { margin-bottom: 4px; }
+.agent-resp-body a { color: var(--accent) !important; }
+
+/* 打字指示器 */
+.typing-indicator { display: inline-flex; gap: 4px; padding: 8px 0; }
+.typing-indicator span { width: 6px; height: 6px; background: var(--text-light); border-radius: 50%; animation: typing 1.2s infinite; }
+.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing { 0%,60%,100% { opacity:0.3; } 30% { opacity:1; } }
+
+/* 用户消息 */
+.user-msg {
+  background: linear-gradient(135deg, #5a4030, #7a5a40);
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 12px 12px 2px 12px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  line-height: 1.6;
+  max-width: 80%;
+  margin-left: auto;
+}
+
+/* 快捷按钮 */
+.quick-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.quick-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--card);
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-sub);
+  transition: all 0.2s;
+}
+.quick-btn:hover { border-color: var(--accent); color: var(--accent); background: #fdf6f0; }
+
+/* ===== 案例库 ===== */
+.case-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(300px,1fr)); gap: 20px; }
+.case-card {
+  background: var(--card);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--border-light);
+  transition: all 0.3s;
+  cursor: pointer;
+}
+.case-card:hover { transform: translateY(-4px); box-shadow: var(--card-hover); }
+.case-card-canvas { width: 100%; height: 180px; display: block; background: #e5dcd2; }
+.case-card-body { padding: 16px; }
+.case-card-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; color: var(--text); }
+.case-card-sub { font-size: 12px; color: var(--text-sub); margin-bottom: 8px; }
+.case-card-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.case-tag { padding: 2px 10px; background: #e0d6cc; border-radius: 6px; font-size: 11px; color: var(--text-sub); }
+.case-card-budget { font-size: 15px; color: var(--accent); font-weight: 700; }
+.case-card-area { font-size: 12px; color: var(--text-light); }
+.case-search-row { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+.case-search-row input {
+  flex: 1;
+  min-width: 200px;
+  padding: 9px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  background: var(--warm-white);
+  color: var(--text);
+}
+.case-search-row input:focus { outline: none; border-color: var(--accent); }
+.case-search-row input::placeholder { color: var(--text-light); }
+.case-filter-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--card);
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-sub);
+  transition: all 0.2s;
+}
+.case-filter-btn.active, .case-filter-btn:hover {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+/* ===== 手绘草图弹窗 ===== */
+.sketch-modal {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 24px;
+  width: 700px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+}
+.sketch-canvas-wrap { text-align: center; margin: 16px 0; }
+.sketch-canvas-wrap canvas { border: 1px solid var(--border); border-radius: 10px; max-width: 100%; }
+.sketch-params { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.sketch-params label { font-size: 13px; color: var(--text-sub); margin-right: 4px; }
+.sketch-params select, .sketch-params input {
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  background: var(--warm-white);
+  color: var(--text);
+}
+
+/* ===== 滚动条美化 ===== */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-light); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>装修AI帮手</h1>
+    <div class="subtitle">司徒 → 迪哥 → 娜娜 → 雷虎 → 小蔓 ｜ 含案例库 & 手绘草图 v1.2</div>
+  </div>
+  <div style="font-size:13px;opacity:0.8;">本地版 v1.2 | 数据存于浏览器本地</div>
+</div>
+
+<div class="nav">
+  <button class="nav-btn" onclick="showPage('home')">首页</button>
+  <button class="nav-btn" onclick="showPage('chat')">💬 咨询对话</button>
+  <button class="nav-btn" onclick="showPage('cases')">📁 装修案例</button>
+  <button class="nav-btn" onclick="showPage('pipeline')">协作流程</button>
+  <button class="nav-btn" onclick="showPage('api')">AI 设置</button>
+</div>
+
+<div class="content">
+
+  <!-- 首页 -->
+  <div class="page active" id="page-home">
+    <!-- 公司简介横幅 -->
+    <div class="home-banner">
+      <div class="home-banner-inner">
+        <h2 id="home-company-name">XX装饰</h2>
+        <p class="home-slogan">匠心筑家 · 品质生活</p>
+        <p class="home-desc">专注品质家装，设计施工一体化服务，让每一个家都值得期待。</p>
+        <button class="btn btn-primary" onclick="showPage('chat')" style="margin-top:16px;padding:12px 32px;font-size:15px;">立即咨询 →</button>
+      </div>
+    </div>
+
+    <!-- 核心优势 -->
+    <div class="home-section">
+      <h3 class="home-section-title">为什么选择我们</h3>
+      <div class="home-advantages">
+        <div class="home-adv-card">
+          <div class="home-adv-icon">🎨</div>
+          <h4>专业设计</h4>
+          <p>资深设计师团队，一对一量身定制，从风格到细节，打造专属您的理想空间。</p>
+        </div>
+        <div class="home-adv-card">
+          <div class="home-adv-icon">💰</div>
+          <h4>透明报价</h4>
+          <p>清单式报价，零增项承诺。每一笔费用清清楚楚，杜绝装修"无底洞"。</p>
+        </div>
+        <div class="home-adv-card">
+          <div class="home-adv-icon">🛡️</div>
+          <h4>合同保障</h4>
+          <p>规范合同条款，法务全程把关。保修无忧，售后有保障。</p>
+        </div>
+        <div class="home-adv-card">
+          <div class="home-adv-icon">📋</div>
+          <h4>全程管控</h4>
+          <p>项目经理一对一跟进，关键节点验收，工期透明，进度实时可查。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 服务团队 -->
+    <div class="home-section">
+      <h3 class="home-section-title">服务团队</h3>
+      <div class="home-team-grid">
+        <div class="home-team-card">
+          <div class="home-team-avatar">🔍</div>
+          <div class="home-team-name">司徒</div>
+          <div class="home-team-role">市场专员</div>
+          <p>洞察本地市场行情，为您匹配最合适的装修方案与优惠资源。</p>
+        </div>
+        <div class="home-team-card">
+          <div class="home-team-avatar">📐</div>
+          <div class="home-team-name">迪哥</div>
+          <div class="home-team-role">预算造价师</div>
+          <p>精准把控每一分预算，材料用量、人工成本，做到心中有数。</p>
+        </div>
+        <div class="home-team-card">
+          <div class="home-team-avatar">🎨</div>
+          <div class="home-team-name">娜娜</div>
+          <div class="home-team-role">首席设计师</div>
+          <p>多年设计经验，擅长现代、北欧、新中式等多种风格，让家更美。</p>
+        </div>
+        <div class="home-team-card">
+          <div class="home-team-avatar">🛡️</div>
+          <div class="home-team-name">雷虎</div>
+          <div class="home-team-role">法务主管</div>
+          <p>审核每一份合同条款，为您规避增项陷阱，保障合法权益。</p>
+        </div>
+        <div class="home-team-card">
+          <div class="home-team-avatar">📋</div>
+          <div class="home-team-name">小蔓</div>
+          <div class="home-team-role">项目经理</div>
+          <p>统筹工程进度，协调各方资源，确保按时保质交付。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 服务流程 -->
+    <div class="home-section">
+      <h3 class="home-section-title">服务流程</h3>
+      <div class="home-flow">
+        <div class="home-flow-step"><span class="home-flow-num">01</span><span>需求沟通</span></div>
+        <div class="home-flow-arrow">→</div>
+        <div class="home-flow-step"><span class="home-flow-num">02</span><span>量房设计</span></div>
+        <div class="home-flow-arrow">→</div>
+        <div class="home-flow-step"><span class="home-flow-num">03</span><span>方案报价</span></div>
+        <div class="home-flow-arrow">→</div>
+        <div class="home-flow-step"><span class="home-flow-num">04</span><span>签约施工</span></div>
+        <div class="home-flow-arrow">→</div>
+        <div class="home-flow-step"><span class="home-flow-num">05</span><span>竣工验收</span></div>
+      </div>
+    </div>
+
+    <!-- 使用指南 -->
+    <div class="home-section">
+      <h3 class="home-section-title">使用指南</h3>
+      <div class="home-guide-grid">
+        <div class="home-guide-card">
+          <div class="home-guide-num">1</div>
+          <div class="home-guide-content">
+            <h4>描述您的需求</h4>
+            <p>进入「咨询对话」页面，输入户型、面积、预算、风格偏好等信息，也可以直接点击预设问题快速开始。</p>
+          </div>
+        </div>
+        <div class="home-guide-card">
+          <div class="home-guide-num">2</div>
+          <div class="home-guide-content">
+            <h4>AI专家自动响应</h4>
+            <p>系统会根据您的问题<strong>智能匹配</strong>对应的专家回答：<br>
+            🔍 司徒（市场专员）— 竞品行情、楼盘动态<br>
+            📐 迪哥（预算造价师）— 报价估算、材料用量<br>
+            🎨 娜娜（首席设计师）— 风格方案、空间布局<br>
+            🛡️ 雷虎（法务主管）— 合同审核、增项风险<br>
+            📋 小蔓（项目经理）— 工期安排、进度跟踪</p>
+          </div>
+        </div>
+        <div class="home-guide-card">
+          <div class="home-guide-num">3</div>
+          <div class="home-guide-content">
+            <h4>查看案例与草图</h4>
+            <p>娜娜会根据您的需求推荐匹配案例，并生成<strong>手绘风格草图</strong>，支持现代简约、北欧、新中式、轻奢四种风格。</p>
+          </div>
+        </div>
+        <div class="home-guide-card">
+          <div class="home-guide-num">4</div>
+          <div class="home-guide-content">
+            <h4>配置AI服务</h4>
+            <p>进入「AI 设置」页面，可免费注册 Groq、硅基流动等 AI 服务获取 API Key，获得更智能的回答。也可使用本地 Ollama 离线模式。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部提示 -->
+    <div style="text-align:center;padding:20px 0 10px;color:var(--text-light);font-size:13px;">
+      点击右上角 <strong>「💬 咨询对话」</strong> 开始体验 →
+    </div>
+  </div>
+  <!-- 💬 客户对话 -->
+  <div class="page" id="page-chat">
+    <div class="config-panel">
+      <h3>💬 咨询对话 — AI专家团队为您服务</h3>
+      <p style="color:#999;font-size:13px;margin-bottom:16px;">
+        输入客户需求/想法，五个Agent分别从专业角度响应。娜娜(Nova)会同时推荐匹配案例 + 生成手绘草图。
+      </p>
+      <div class="quick-actions" id="quick-actions">
+        <button class="quick-btn" onclick="quickInput(this)">我家三室两厅，想做现代简约风格</button>
+        <button class="quick-btn" onclick="quickInput(this)">预算20万以内，有没有合适的方案</button>
+        <button class="quick-btn" onclick="quickInput(this)">听说装修很多增项陷阱，你们怎么保证</button>
+        <button class="quick-btn" onclick="quickInput(this)">工期一般多久？会不会延期</button>
+        <button class="quick-btn" onclick="quickInput(this)">想要北欧风，两室一厅预算10万够吗</button>
+      </div>
+    </div>
+    <div class="chat-container">
+      <div class="chat-input-area">
+        <div class="chat-box">
+          <div class="chat-messages" id="chat-messages">
+            <div style="text-align:center;color:#bbb;padding:40px 20px;font-size:14px;">
+              👋 欢迎使用五Agent对话系统<br><br>
+              请在下方输入客户需求或想法，<br>
+              五个Agent将分别从专业角度给出响应。<br>
+              <span style="color:#eb2f96;">娜娜(Nova)会额外推荐案例 + 生成手绘草图。</span>
+            </div>
+          </div>
+          <div class="chat-input-row">
+            <textarea id="chat-input" placeholder="输入客户需求、想法或问题...&#10;（支持多行，按Ctrl+Enter发送）" onkeydown="if(event.ctrlKey&&event.key==='Enter')sendChat()"></textarea>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <button class="btn btn-primary" onclick="sendChat()" style="flex:1;padding:0 20px;">发送</button>
+              <button class="btn btn-outline" onclick="clearChat()" style="flex:1;padding:0 12px;font-size:12px;">清空</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="chat-output-area">
+        <div class="config-panel" style="height:600px;overflow-y:auto;">
+          <h3 style="font-size:15px;">响应说明</h3>
+          <div style="font-size:13px;color:var(--text-sub);line-height:2.2;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;"><div style="width:4px;height:20px;background:var(--scout);border-radius:2px;"></div> <strong>司徒</strong><span style="color:var(--text-light);font-size:12px;">市场专员</span> 客户线索、竞品情报</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;"><div style="width:4px;height:20px;background:var(--digit);border-radius:2px;"></div> <strong>迪哥</strong><span style="color:var(--text-light);font-size:12px;">预算造价师</span> 报价估算、材料用量</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;"><div style="width:4px;height:20px;background:var(--nova);border-radius:2px;"></div> <strong>娜娜</strong><span style="color:var(--text-light);font-size:12px;">首席设计师</span> 方案设计、案例推荐</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;"><div style="width:4px;height:20px;background:var(--lex);border-radius:2px;"></div> <strong>雷虎</strong><span style="color:var(--text-light);font-size:12px;">法务主管</span> 合同审核、风险把关</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;"><div style="width:4px;height:20px;background:var(--memo);border-radius:2px;"></div> <strong>小蔓</strong><span style="color:var(--text-light);font-size:12px;">项目经理</span> 工期安排、节点提醒</div>
+          </div>
+          <hr style="margin:16px 0;border:none;border-top:1px solid #f0f0f0;">
+          <h3 style="font-size:15px;margin-bottom:12px;">案例推荐逻辑</h3>
+          <div style="font-size:13px;color:#666;line-height:2;">
+            <div>· 系统根据您输入的关键词</div>
+            <div>· 自动匹配风格、户型、面积最接近的已完工案例</div>
+            <div>· 娜娜回复中会展示推荐案例卡片</div>
+            <div>· 点击案例可查看手绘草图和大库详情</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📁 案例库 -->
+  <div class="page" id="page-cases">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <h3 style="font-size:18px;">案例库（共 <span id="case-count">0</span> 个成功案例）</h3>
+      <div style="font-size:13px;color:#999;">点击案例卡片查看详情 + 手绘草图</div>
+    </div>
+    <div class="case-search-row">
+      <input type="text" id="case-search" placeholder="搜索风格、户型、楼盘..." oninput="renderCases()">
+      <button class="case-filter-btn active" onclick="filterCases('all',this)">全部</button>
+      <button class="case-filter-btn" onclick="filterCases('现代简约',this)">现代简约</button>
+      <button class="case-filter-btn" onclick="filterCases('北欧',this)">北欧</button>
+      <button class="case-filter-btn" onclick="filterCases('轻奢',this)">轻奢</button>
+      <button class="case-filter-btn" onclick="filterCases('新中式',this)">新中式</button>
+      <button class="case-filter-btn" onclick="filterCases('日式',this)">日式</button>
+      <button class="case-filter-btn" onclick="filterCases('工业风',this)">工业风</button>
+      <button class="case-filter-btn" onclick="filterCases('美式',this)">美式</button>
+    </div>
+    <div class="case-grid" id="case-grid"></div>
+  </div>
+
+  <!-- 协作流程 -->
+  <div class="page" id="page-pipeline">
+    <div class="config-panel">
+      <h3>五Agent协作流程</h3>
+      <p style="color:var(--text-sub);font-size:13px;margin-bottom:16px;">我们采用五位AI专家协同工作模式，从市场分析到项目交付，全流程专业覆盖。</p>
+      <div class="pipeline-wrap" id="pipeline-cards"></div>
+    </div>
+    <div class="config-panel">
+      <h3>流程说明</h3>
+      <div style="font-size:14px;color:var(--text-sub);line-height:2;">
+        <div><strong>🔍 司徒（市场专员）</strong> — 分析市场行情、竞品报价、楼盘动态，为您提供最新市场情报。</div>
+        <div><strong>📐 迪哥（预算造价师）</strong> — 根据户型面积、装修档次精准估算报价，计算材料用量。</div>
+        <div><strong>🎨 娜娜（首席设计师）</strong> — 根据需求给出设计方案、风格搭配、空间规划，生成手绘草图。</div>
+        <div><strong>🛡️ 雷虎（法务主管）</strong> — 审核合同条款、报价合规性，预警增项风险，保护您的权益。</div>
+        <div><strong>📋 小蔓（项目经理）</strong> — 项目进度规划、工期安排、节点提醒，确保按时保质交付。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI 设置 -->
+  <div class="page" id="page-api">
+    <!-- 混合模式状态 -->
+    <div class="config-panel">
+      <h3>AI 服务状态（混合模式）</h3>
+      <p style="color:var(--text-sub);font-size:13px;margin-bottom:16px;">
+        系统会<strong>优先使用云端AI</strong>（速度快、效果好），云端不可用时<strong>自动降级到本地Ollama</strong>（离线可用）。
+      </p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:10px;background:var(--warm-white);border:1px solid var(--border-light);">
+          <div id="cloud-status-dot" style="width:12px;height:12px;border-radius:50%;background:#d45050;"></div>
+          <div>
+            <div style="font-weight:600;font-size:14px;">云端 AI</div>
+            <div id="cloud-status-text" style="font-size:12px;color:var(--text-light);">未配置</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:10px;background:var(--warm-white);border:1px solid var(--border-light);">
+          <div id="ollama-status-dot" style="width:12px;height:12px;border-radius:50%;background:#d45050;"></div>
+          <div>
+            <div style="font-weight:600;font-size:14px;">本地 Ollama</div>
+            <div id="ollama-status-text" style="font-size:12px;color:var(--text-light);">未检测到</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="config-panel" style="border:2px solid var(--accent);">
+      <h3 style="color:var(--accent);">免费注册 AI 服务（推荐）</h3>
+      <p style="color:var(--text-sub);font-size:13px;margin-bottom:16px;">
+        以下服务提供<strong>免费额度</strong>，注册后获取 API Key 即可使用。<br>
+        每个人用自己的 Key，安全独立，不会泄露他人信息。
+      </p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:20px;">
+        <div style="background:var(--warm-white);border:1px solid var(--border-light);border-radius:10px;padding:16px;">
+          <div style="font-weight:700;font-size:15px;margin-bottom:6px;">Groq（推荐）</div>
+          <div style="font-size:12px;color:var(--text-sub);line-height:1.8;margin-bottom:10px;">
+            免费额度：每天 14400 次请求<br>模型：Llama 3、Mixtral 等<br>速度：极快（专用芯片加速）
+          </div>
+          <a href="https://console.groq.com/keys" target="_blank" style="color:var(--accent);font-size:13px;">注册获取 API Key →</a>
+        </div>
+        <div style="background:var(--warm-white);border:1px solid var(--border-light);border-radius:10px;padding:16px;">
+          <div style="font-weight:700;font-size:15px;margin-bottom:6px;">硅基流动 SiliconFlow</div>
+          <div style="font-size:12px;color:var(--text-sub);line-height:1.8;margin-bottom:10px;">
+            免费额度：注册送 14 元<br>模型：Qwen、DeepSeek 等<br>国内访问，速度快
+          </div>
+          <a href="https://cloud.siliconflow.cn/account/ak" target="_blank" style="color:var(--accent);font-size:13px;">注册获取 API Key →</a>
+        </div>
+        <div style="background:var(--warm-white);border:1px solid var(--border-light);border-radius:10px;padding:16px;">
+          <div style="font-weight:700;font-size:15px;margin-bottom:6px;">小米 MiMo Token Plan</div>
+          <div style="font-size:12px;color:var(--text-sub);line-height:1.8;margin-bottom:10px;">
+            免费额度：注册即送<br>模型：mimo-v2.5-pro<br>国产模型，中文优秀
+          </div>
+          <a href="https://token-plan-cn.xiaomimimo.com" target="_blank" style="color:var(--accent);font-size:13px;">注册获取 API Key →</a>
+        </div>
+      </div>
+      <div style="background:var(--warm-white);border:1px solid var(--border-light);border-radius:10px;padding:16px;">
+        <div style="font-weight:600;margin-bottom:12px;">已有 API Key？快速配置：</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+          <button class="btn btn-sm btn-outline" onclick="presetAPI('groq')">Groq</button>
+          <button class="btn btn-sm btn-outline" onclick="presetAPI('siliconflow')">硅基流动</button>
+          <button class="btn btn-sm btn-outline" onclick="presetAPI('mimo')">小米 MiMo</button>
+        </div>
+        <div class="form-row"><label>API 地址</label><input type="text" id="api-base" placeholder="https://api.groq.com/openai/v1"></div>
+        <div class="form-row"><label>API Key</label><input type="password" id="api-key" placeholder="gsk_... 或 sk-..."></div>
+        <div class="form-row"><label>模型名称</label><input type="text" id="api-model" placeholder="llama-3.3-70b-versatile"></div>
+        <div style="text-align:center;padding:12px;">
+          <button class="btn btn-primary" onclick="saveAPIConfig()">保存并测试</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="config-panel">
+      <h3>本地 Ollama（完全离线）</h3>
+      <div style="font-size:13px;color:var(--text-sub);line-height:2;">
+        <div>1. 安装 Ollama：<code style="background:var(--warm-white);padding:2px 6px;border-radius:4px;">ollama.com</code></div>
+        <div>2. 拉取小模型：<code style="background:var(--warm-white);padding:2px 6px;border-radius:4px;">ollama pull qwen2.5:1.5b</code></div>
+        <div>3. 启动本系统后端：<code style="background:var(--warm-white);padding:2px 6px;border-radius:4px;">双击「启动服务.bat」</code></div>
+        <div>4. API 设置中预设选「Ollama」，保存即可</div>
+        <div style="margin-top:8px;color:var(--text-light);">
+          推荐模型：qwen2.5:1.5b（1GB，轻量）/ qwen2.5:7b（4GB，效果好）
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end .content -->
+
+<!-- 案例详情弹窗 -->
+<div class="modal-overlay" id="modal-case-detail">
+  <div class="sketch-modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h3 id="case-detail-title" style="font-size:18px;"></h3>
+      <button onclick="closeModal('modal-case-detail')" style="background:none;border:none;font-size:20px;cursor:pointer;">✕</button>
+    </div>
+    <div style="display:flex;gap:20px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:280px;">
+        <div id="case-detail-body" style="font-size:14px;line-height:2;color:#444;"></div>
+      </div>
+      <div style="flex:1;min-width:280px;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:8px;">手绘草图（AI模拟）</div>
+        <div class="sketch-canvas-wrap">
+          <canvas id="case-sketch-canvas" width="340" height="260"></canvas>
+        </div>
+        <div style="font-size:12px;color:#999;text-align:center;margin-top:6px;">基于户型自动生成的手绘风格布局草图</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 手绘草图弹窗（娜娜回复中调用） -->
+<div class="modal-overlay" id="modal-sketch">
+  <div class="sketch-modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h3>🎨 娜娜 · 手绘草图</h3>
+      <button onclick="closeModal('modal-sketch')" style="background:none;border:none;font-size:20px;cursor:pointer;">✕</button>
+    </div>
+    <div class="sketch-params">
+      <div><label>户型：</label>
+        <select id="sketch-layout" onchange="generateSketch()">
+          <option value="1b1l">一室一厅</option>
+          <option value="2b1l" selected>两室一厅</option>
+          <option value="3b2l">三室两厅</option>
+          <option value="3b1l">三室一厅</option>
+          <option value="4b2l">四室两厅</option>
+        </select>
+      </div>
+      <div><label>风格：</label>
+        <select id="sketch-style" onchange="generateSketch()">
+          <option value="modern" selected>现代简约</option>
+          <option value="nordic">北欧</option>
+          <option value="chinese">新中式</option>
+          <option value="luxury">轻奢</option>
+        </select>
+      </div>
+    </div>
+    <div class="sketch-canvas-wrap">
+      <canvas id="sketch-canvas" width="600" height="400"></canvas>
+    </div>
+    <div style="text-align:center;margin-top:12px;">
+      <button class="btn btn-primary" onclick="downloadSketch()">下载草图</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-sketch')" style="margin-left:8px;">关闭</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== 全局数据 ==========
+let config = {
+  company: { name:'', address:'', phone:'', owner:'' },
+  agents: {
+    scout:  { name:'司徒', title:'市场专员', role:'市场情报与客户线索', temp:0.3, enabled:true },
+    digit:  { name:'迪哥', title:'预算造价师', role:'量房数据与报价分析', temp:0.3, enabled:true },
+    nova:   { name:'娜娜', title:'首席设计师', role:'方案设计与内容创作', temp:0.7, enabled:true },
+    lex:    { name:'雷虎', title:'法务主管', role:'合同报价合规审核', temp:0.1, enabled:true, blocking:true },
+    memo:   { name:'小蔓', title:'项目经理', role:'工程进度与客户沟通', temp:0.2, enabled:true }
+  },
+  pipeline: ['scout','digit','nova','lex','memo']
+};
+let projects = [];
+let logs = [];
+let chatHistory = [];
+let casesData = [];   // 案例库数据
+let currentCaseFilter = 'all';
+
+// ========== 初始化 ==========
+function init() {
+  try {
+    const c = localStorage.getItem('decoration-config');
+    if (c) config = JSON.parse(c);
+    const p = localStorage.getItem('decoration-projects');
+    if (p) projects = JSON.parse(p);
+    const h = localStorage.getItem('decoration-chat');
+    if (h) chatHistory = JSON.parse(h);
+  } catch(e) {}
+  loadCasesData();
+  renderHome();
+  renderPipelineCards();
+  renderAgentConfigs();
+  renderProjects();
+  renderTemplates();
+  renderLog();
+  document.getElementById('cfg-name').value = config.company.name || '';
+  document.getElementById('cfg-addr').value = config.company.address || '';
+  document.getElementById('cfg-phone').value = config.company.phone || '';
+  document.getElementById('cfg-owner').value = config.company.owner || '';
+  addLog('系统初始化完成 v2.0', 'info');
+  // 检测后端 AI 服务
+  testBackendConnection().then(function(ok) {
+    if (ok) {
+      var st = window._backendStatus || {};
+      var parts = [];
+      if (st.cloud_configured) parts.push('云端:' + st.cloud_model);
+      if (st.ollama_running) parts.push('本地Ollama:' + st.ollama_model);
+      if (parts.length > 0) {
+        addLog('混合模式就绪 — ' + parts.join(' + '), 'success');
+      } else if (st.portable_ollama) {
+        addLog('检测到便携Ollama，等待启动...', 'warn');
+      } else {
+        addLog('后端已连接，请配置AI服务', 'warn');
+      }
+      loadAPIConfig();
+    } else {
+      addLog('未检测到后端，使用本地模拟模式', 'warn');
+    }
+  });
+}
+
+async function loadCasesData() {
+  // 尝试从localStorage加载，否则从cases.json加载（通过内嵌数据）
+  const saved = localStorage.getItem('decoration-cases');
+  if (saved) {
+    try { casesData = JSON.parse(saved); } catch(e) {}
+  }
+  if (casesData.length === 0) {
+    // 内嵌案例数据（与cases.json同步）
+    casesData = [
+      {id:'C001',title:'现代简约·三室两厅',style:'现代简约',layout:'三室两厅一卫',area:110,budget:140000,duration:75,location:'西安·曲江新区',tags:['现代简约','三室两厅','刚需'],highlights:['全屋定制收纳','开放式厨房','阳台改书房'],satisfaction:5},
+      {id:'C002',title:'北欧风·两室一厅',style:'北欧',layout:'两室一厅一卫',area:78,budget:98000,duration:60,location:'西安·高新区',tags:['北欧','两室一厅','小户型'],highlights:['浅色原木地板','几何图案软装'],satisfaction:5},
+      {id:'C003',title:'新中式·四室两厅',style:'新中式',layout:'四室两厅两卫',area:150,budget:280000,duration:100,location:'西安·浐灞',tags:['新中式','四室两厅','大户型'],highlights:['屏风隔断入口','中式实木家具'],satisfaction:5},
+      {id:'C004',title:'轻奢风·三室两厅',style:'轻奢',layout:'三室两厅两卫',area:128,budget:220000,duration:85,location:'西安·经开区',tags:['轻奢','三室两厅'],highlights:['大理石背景墙','金属线条吊顶'],satisfaction:4},
+      {id:'C005',title:'日式原木·两室一厅',style:'日式',layout:'两室一厅一卫',area:72,budget:88000,duration:55,location:'西安·雁塔区',tags:['日式','原木','两室一厅'],highlights:['榻榻米卧室','整体原木定制'],satisfaction:5},
+      {id:'C006',title:'现代简约·一室一厅',style:'现代简约',layout:'一室一厅一卫',area:45,budget:55000,duration:40,location:'西安·碑林区',tags:['现代简约','一室一厅','单身公寓'],highlights:['LOFT阁楼床','折叠餐桌'],satisfaction:4},
+      {id:'C007',title:'工业风·三室两厅',style:'工业风',layout:'三室两厅一卫',area:108,budget:160000,duration:70,location:'西安·未央区',tags:['工业风','三室两厅','个性'],highlights:['裸露砖墙','铁艺楼梯'],satisfaction:5},
+      {id:'C008',title:'美式乡村·四室两厅',style:'美式',layout:'四室两厅两卫',area:145,budget:260000,duration:95,location:'西安·长安区',tags:['美式','四室两厅'],highlights:['壁炉造型电视墙','碎花布艺'],satisfaction:5},
+      {id:'C009',title:'现代简约·三室一厅',style:'现代简约',layout:'三室一厅一卫',area:95,budget:120000,duration:65,location:'西安·灞桥区',tags:['现代简约','三室一厅'],highlights:['入户玄关收纳','阳台打通'],satisfaction:5},
+      {id:'C010',title:'轻奢风·两室一厅',style:'轻奢',layout:'两室一厅一卫',area:85,budget:150000,duration:68,location:'西安·曲江新区',tags:['轻奢','两室一厅'],highlights:['金属线条背景墙','玻璃隔断'],satisfaction:5}
+    ];
+  }
+  renderCases();
+}
+
+</script>
+<!-- Rough.js 手绘风格渲染库 -->
+<script src="rough.min.js?v=3"></script>
+<!-- 主应用逻辑 (app.js) -->
+<script src="app.js?v=3"></script>
+<script>init();</script>
+</body>
+</html>

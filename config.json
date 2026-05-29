@@ -1,0 +1,74 @@
+{
+  "company": {
+    "name": "【装修公司名称】",
+    "address": "【公司地址】",
+    "phone": "【联系电话】",
+    "owner": "【负责人姓名】"
+  },
+  "agents": {
+    "scout": {
+      "name": "司徒",
+      "title": "市场专员",
+      "role": "市场情报与客户线索",
+      "temperature": 0.3,
+      "model": "default",
+      "enabled": true,
+      "description": "监控楼盘交付动态、竞品报价、客户线索搜集"
+    },
+    "digit": {
+      "name": "迪哥",
+      "title": "预算造价师",
+      "role": "量房数据与报价分析",
+      "temperature": 0.3,
+      "model": "default",
+      "enabled": true,
+      "description": "量房数据录入、报价计算、材料用量估算"
+    },
+    "nova": {
+      "name": "娜娜",
+      "title": "首席设计师",
+      "role": "方案设计与内容创作",
+      "temperature": 0.7,
+      "model": "default",
+      "enabled": true,
+      "description": "设计方案说明、效果图文案、案例包装"
+    },
+    "lex": {
+      "name": "雷虎",
+      "title": "法务主管",
+      "role": "合同报价合规审核",
+      "temperature": 0.1,
+      "model": "default",
+      "enabled": true,
+      "description": "合同条款审核、报价单合规、增项风险预警",
+      "blocking": true
+    },
+    "memo": {
+      "name": "小蔓",
+      "title": "项目经理",
+      "role": "工程进度与客户沟通",
+      "temperature": 0.2,
+      "model": "default",
+      "enabled": true,
+      "description": "施工进度追踪、客户沟通记录、节点提醒"
+    }
+  },
+  "pipeline": ["scout", "digit", "nova", "lex", "memo"],
+  "project_stages": [
+    "线索获取",
+    "量房报价",
+    "设计方案",
+    "合同签署",
+    "开工施工",
+    "水电验收",
+    "泥木验收",
+    "油漆验收",
+    "竣工交付",
+    "保修跟进"
+  ],
+  "paths": {
+    "projects": "./projects/",
+    "templates": "./templates/",
+    "outputs": "./outputs/"
+  }
+}
