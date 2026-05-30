@@ -665,6 +665,16 @@ body {
         <button class="quick-btn" onclick="quickInput(this)">想要北欧风，两室一厅预算10万够吗</button>
       </div>
     </div>
+    <!-- 客户信息面板 -->
+    <div class="config-panel" style="padding:14px 18px;margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span style="font-size:14px;font-weight:600;color:var(--text-sub);">📋 客户信息：</span>
+          <span id="customer-info-panel"><span style="color:var(--text-light);font-size:13px;">对话中自动提取客户信息...</span></span>
+        </div>
+        <button class="btn btn-sm btn-outline" onclick="clearCustomerInfo()" style="font-size:11px;">清除</button>
+      </div>
+    </div>
     <div class="chat-container">
       <div class="chat-input-area">
         <div class="chat-box">
@@ -920,8 +930,11 @@ function init() {
     if (p) projects = JSON.parse(p);
     const h = localStorage.getItem('decoration-chat');
     if (h) chatHistory = JSON.parse(h);
+    const ci = localStorage.getItem('decoration-customer');
+    if (ci) customerInfo = JSON.parse(ci);
   } catch(e) {}
   loadCasesData();
+  renderCustomerInfo();
   renderHome();
   renderPipelineCards();
   renderAgentConfigs();

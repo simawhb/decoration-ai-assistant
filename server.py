@@ -165,6 +165,35 @@ AGENT_PROMPTS = {
 
     "digit": """你是「迪哥」，装修公司的预算造价师。
 职责：根据户型面积、装修档次估算报价、计算材料用量、分析成本。
+
+【重要】你必须按以下格式输出结构化报价单：
+
+**预算分析**
+- 面积：XXX㎡
+- 档次：精装/中装/简装
+- 客户预算：¥XXX
+
+**分项报价清单：**
+| 项目 | 预估金额 | 说明 |
+|------|----------|------|
+| 基础工程（水电/泥木/油漆） | ¥XXX | 含人工+辅材 |
+| 主材（瓷砖/地板/卫浴/橱柜） | ¥XXX | 品牌：XXX |
+| 家具 | ¥XXX | 柜体/沙发/床等 |
+| 家电 | ¥XXX | 空调/厨电等 |
+| 软装（窗帘/灯具/装饰） | ¥XXX | |
+| 设计费 | ¥XXX | |
+| **合计** | **¥XXX** | |
+
+**材料用量估算：**
+- 瓷砖：XX㎡（含5%损耗）
+- 地板：XX㎡
+- 涂料：XX桶（5L/桶）
+- 防水涂料：XXkg
+
+**省钱建议：**（1-2条具体建议）
+
+> 以上为预估价格，精准报价需上门量房后确认。
+
 回复风格：数字精确，列表清晰，注明"预估"和"需量房确认"。
 注意：你只回答与预算、报价、材料用量相关的问题。""",
 
@@ -175,6 +204,23 @@ AGENT_PROMPTS = {
 
     "lex": """你是「雷虎」，装修公司的法务主管。
 职责：审核合同条款、报价合规性、增项风险预警、保护客户权益。
+
+【重要】当客户提到报价、合同、费用相关话题时，你必须输出增项风险检查：
+
+**增项风险检查：**
+| 常见陷阱 | 风险等级 | 检查要点 |
+|----------|----------|----------|
+| 水电预估不足 | 高 | 是否按实际米数结算？有无上限？ |
+| 防水面积缩水 | 高 | 卫生间防水是否做到1.8m？ |
+| 拆改费用遗漏 | 中 | 墙体拆除、垃圾清运是否包含？ |
+| 主材升级套路 | 中 | 合同品牌型号是否明确？ |
+| 管理费/税金 | 低 | 是否单独收取？比例多少？ |
+
+**合同签订建议：**
+1. 付款节点：开工≤30%、中期≤50%、竣工≥20%
+2. 增项条款：必须书面确认，单次不超总价10%
+3. 保修条款：基础工程≥2年，防水≥5年
+
 回复风格：严谨准确，引用法规条款，风险等级明确标注（高/中/低）。
 注意：你只回答与合同、法律合规、风险预警相关的问题。""",
 
@@ -207,11 +253,66 @@ def match_agents(user_text):
     return matched
 
 
-def call_llm(system_prompt, user_message):
+def _extract_customer_info(user_text, history=None):
+    """从对话中提取客户信息（户型/面积/预算/风格/城市）"""
+    import re
+    info = {}
+
+    # 合并历史对话文本
+    all_text = user_text
+    if history:
+        for msg in history[-10:]:
+            all_text += " " + msg.get("content", "")
+
+    # 户型
+    layout_patterns = [
+        r'([一二三四五六]室[一二两三四五六]厅[一二三四五六]?卫?)',
+        r'(\d+室\d+厅\d*卫?)',
+        r'([一二三四]居)',
+    ]
+    for p in layout_patterns:
+        m = re.search(p, all_text)
+        if m:
+            info['layout'] = m.group(1)
+            break
+
+    # 面积
+    area_m = re.search(r'(\d+)\s*[㎡平平米]', all_text)
+    if area_m:
+        info['area'] = int(area_m.group(1))
+
+    # 预算
+    budget_m = re.search(r'预算?\s*(\d+)\s*万', all_text)
+    if budget_m:
+        info['budget'] = int(budget_m.group(1)) * 10000
+    else:
+        budget_m2 = re.search(r'(\d+)\s*万', all_text)
+        if budget_m2:
+            info['budget'] = int(budget_m2.group(1)) * 10000
+
+    # 风格
+    styles = ['现代简约', '北欧', '新中式', '轻奢', '日式', '工业风', '美式', '中式', '法式', '地中海']
+    for s in styles:
+        if s in all_text:
+            info['style'] = s
+            break
+
+    # 城市
+    cities = ['西安', '北京', '上海', '广州', '深圳', '成都', '杭州', '武汉', '南京', '重庆']
+    for c in cities:
+        if c in all_text:
+            info['city'] = c
+            break
+
+    return info
+
+
+def call_llm(system_prompt, user_message, history=None):
     """
     混合模式调用 LLM：
     1. 优先使用云端 API（如果配置了）
     2. 云端失败或未配置 → 降级到本地 Ollama
+    history: 可选的对话历史 [{"role":"user","content":"..."},{"role":"assistant","content":"..."}]
     """
     # 第一优先：云端 API
     if API_CONFIG["api_key"] and API_CONFIG["api_base"]:
@@ -221,6 +322,7 @@ def call_llm(system_prompt, user_message):
             API_CONFIG["model"],
             system_prompt,
             user_message,
+            history,
         )
         if result and not result.startswith("["):
             return result
@@ -235,6 +337,7 @@ def call_llm(system_prompt, user_message):
             API_CONFIG["ollama_model"],
             system_prompt,
             user_message,
+            history,
         )
         if result and not result.startswith("["):
             return result
@@ -246,17 +349,21 @@ def call_llm(system_prompt, user_message):
     return "[AI服务不可用] 云端和本地服务均无法访问，请检查网络或配置。"
 
 
-def _call_api(api_base, api_key, model, system_prompt, user_message):
-    """调用单个 OpenAI 兼容接口"""
+def _call_api(api_base, api_key, model, system_prompt, user_message, history=None):
+    """调用单个 OpenAI 兼容接口，支持多轮对话"""
     api_base = api_base.rstrip("/")
     url = f"{api_base}/chat/completions"
 
+    messages = [{"role": "system", "content": system_prompt}]
+    # 加入对话历史（最多保留最近10轮）
+    if history:
+        for msg in history[-20:]:
+            messages.append(msg)
+    messages.append({"role": "user", "content": user_message})
+
     payload = {
         "model": model,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_message},
-        ],
+        "messages": messages,
         "temperature": 0.5,
         "max_tokens": 800,
     }
@@ -323,21 +430,24 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._json_response({"error": "not found"}, 404)
 
     def _handle_chat(self):
-        """处理对话请求"""
+        """处理对话请求，支持多轮对话历史"""
         body = self._read_body()
         user_text = body.get("message", "").strip()
         if not user_text:
             self._json_response({"error": "empty message"}, 400)
             return
 
+        # 获取对话历史（前端传来的最近N轮）
+        history = body.get("history", [])
+
         # 意图匹配
         agents_to_call = match_agents(user_text)
 
-        # 依次调用 Agent
+        # 依次调用 Agent（传入历史实现多轮对话）
         responses = []
         for agent_key in agents_to_call:
             prompt = AGENT_PROMPTS.get(agent_key, "你是一个装修顾问。")
-            reply = call_llm(prompt, user_text)
+            reply = call_llm(prompt, user_text, history=history)
             responses.append({
                 "agent": agent_key,
                 "name": _agent_name(agent_key),
@@ -345,7 +455,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 "response": reply,
             })
 
-        self._json_response({"responses": responses})
+        # 提取客户信息
+        customer_info = _extract_customer_info(user_text, history)
+
+        self._json_response({"responses": responses, "customer_info": customer_info})
 
     def _handle_save_config(self):
         """保存 API 配置"""

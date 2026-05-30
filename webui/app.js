@@ -1,6 +1,46 @@
 // app.js - 装修公司五Agent系统主逻辑 v1.3
 // 功能：对话、案例推荐、案例库、手绘草图、流水线、项目管理
 
+// ========== 客户信息管理 ==========
+var customerInfo = {};
+
+function updateCustomerInfo(newInfo) {
+  // 合并新信息
+  for (var key in newInfo) {
+    if (newInfo[key]) customerInfo[key] = newInfo[key];
+  }
+  localStorage.setItem('decoration-customer', JSON.stringify(customerInfo));
+  renderCustomerInfo();
+}
+
+function renderCustomerInfo() {
+  var el = document.getElementById('customer-info-panel');
+  if (!el) return;
+  var keys = Object.keys(customerInfo);
+  if (keys.length === 0) {
+    el.innerHTML = '<div style="color:var(--text-light);font-size:13px;padding:8px;">对话中自动提取客户信息...</div>';
+    return;
+  }
+  var labels = { layout:'户型', area:'面积', budget:'预算', style:'风格', city:'城市' };
+  var units = { area:'㎡', budget:'元' };
+  var html = '';
+  for (var i = 0; i < keys.length; i++) {
+    var k = keys[i];
+    var label = labels[k] || k;
+    var val = customerInfo[k];
+    if (k === 'budget') val = (val / 10000).toFixed(1) + '万';
+    else if (k === 'area') val = val + '㎡';
+    html += '<span style="display:inline-block;background:var(--accent);color:#fff;padding:3px 10px;border-radius:12px;font-size:12px;margin:2px;">' + label + '：' + val + '</span>';
+  }
+  el.innerHTML = html;
+}
+
+function clearCustomerInfo() {
+  customerInfo = {};
+  localStorage.removeItem('decoration-customer');
+  renderCustomerInfo();
+}
+
 // ========== 页面切换 ==========
 function showPage(pageId) {
   var pages = document.querySelectorAll('.page');
@@ -170,15 +210,34 @@ function quickInput(btn) {
 // ========== 后端 API 调用 ==========
 var apiMode = false; // 是否连接后端
 
+// 构建对话历史（最近10轮，OpenAI格式）
+function buildChatHistory() {
+  var history = [];
+  var recent = chatHistory.slice(-20); // 最近20条
+  for (var i = 0; i < recent.length; i++) {
+    var item = recent[i];
+    if (item.role === 'user') {
+      history.push({ role: 'user', content: item.text });
+    } else if (item.role === 'agent') {
+      history.push({ role: 'assistant', content: item.response });
+    }
+  }
+  return history;
+}
+
 async function callBackendAPI(text) {
   try {
     var resp = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text })
+      body: JSON.stringify({ message: text, history: buildChatHistory() })
     });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     var data = await resp.json();
+    // 处理客户信息
+    if (data.customer_info && Object.keys(data.customer_info).length > 0) {
+      updateCustomerInfo(data.customer_info);
+    }
     return data.responses || [];
   } catch (e) {
     return null;
@@ -439,7 +498,36 @@ function generateAgentResponse(key, userText) {
       const areaNum = parseInt(area);
       const budNum  = parseInt(budget);
       const avg = Math.round(budNum / areaNum);
-      return '**预算分析（基于您的描述）：**\n\n- 预估面积：' + area + '㎡\n- 您的预算：¥' + parseInt(budget).toLocaleString() + '\n- 推荐档次：' + (avg > 1200 ? '精装' : '中装') + '\n\n**材料用量估算（预估）：**\n- 瓷砖：' + Math.ceil(areaNum*1.1) + '㎡（含损耗）\n- 地板：' + Math.ceil(areaNum*0.5) + '㎡\n- 涂料：' + Math.ceil(areaNum*2.5/5) + '桶（5L/桶）\n\n**预估报价区间：¥' + Math.floor(areaNum*900).toLocaleString() + ' – ¥' + Math.floor(areaNum*1500).toLocaleString() + '**\n\n> 精准报价需量房后确认，此预估仅供参考。';
+      const level = avg > 1500 ? '精装' : avg > 1000 ? '中装' : '简装';
+      // 分项报价
+      const baseCost = Math.round(areaNum * (avg > 1500 ? 500 : 350));
+      const materialCost = Math.round(areaNum * (avg > 1500 ? 600 : 400));
+      const furnitureCost = Math.round(budNum * 0.2);
+      const applianceCost = Math.round(budNum * 0.12);
+      const softCost = Math.round(budNum * 0.08);
+      const designCost = Math.round(budNum * 0.03);
+      const total = baseCost + materialCost + furnitureCost + applianceCost + softCost + designCost;
+      return '**预算分析**\n'
+        + '- 面积：' + area + '㎡\n'
+        + '- 档次：' + level + '\n'
+        + '- 您的预算：¥' + parseInt(budget).toLocaleString() + '\n\n'
+        + '**分项报价清单：**\n'
+        + '- 基础工程（水电/泥木/油漆）：¥' + baseCost.toLocaleString() + ' — 含人工+辅材\n'
+        + '- 主材（瓷砖/地板/卫浴/橱柜）：¥' + materialCost.toLocaleString() + ' — 品牌环保级\n'
+        + '- 家具（柜体/沙发/床等）：¥' + furnitureCost.toLocaleString() + '\n'
+        + '- 家电（空调/厨电等）：¥' + applianceCost.toLocaleString() + '\n'
+        + '- 软装（窗帘/灯具/装饰）：¥' + softCost.toLocaleString() + '\n'
+        + '- 设计费：¥' + designCost.toLocaleString() + '\n'
+        + '- **合计：¥' + total.toLocaleString() + '**（约¥' + Math.round(total/areaNum) + '/㎡）\n\n'
+        + '**材料用量估算：**\n'
+        + '- 瓷砖：' + Math.ceil(areaNum*1.1) + '㎡（含5%损耗）\n'
+        + '- 地板：' + Math.ceil(areaNum*0.5) + '㎡\n'
+        + '- 涂料：' + Math.ceil(areaNum*2.5/5) + '桶（5L/桶）\n'
+        + '- 防水涂料：' + Math.ceil(areaNum*0.3) + 'kg\n\n'
+        + '**省钱建议：**\n'
+        + '- 主材可选国产一线品牌（如圣象、大自然），性价比高于进口\n'
+        + '- 水电建议走横平竖直，预算预留10%应急\n\n'
+        + '> 以上为预估价格，精准报价需上门量房后确认。';
     },
     nova: function() {
       const style = matchedStyle || '现代简约';
@@ -459,7 +547,23 @@ function generateAgentResponse(key, userText) {
         caseHTML + '\n\nSKETCH_BTN_END';
     },
     lex: function() {
-      return '**⚠️ 合规提醒（保护您的权益）：**\n\n签订合同前，请注意以下要点：\n\n1. **付款节点**：开工≤30%、中期≤50%、竣工≥20%（法定建议）\n2. **增项条款**：必须明确"增项需书面确认，不超过总价10%"\n3. **保修条款**：基础工程≥2年，防水≥5年（法定最低）\n4. **材料品牌**：合同中必须明确标注品牌、型号、环保等级\n\n**我们的承诺：**\n- 合同模板经法务审核，条款对等\n- 报价单无模糊项，所有材料明确标注\n- 增项需您书面签字确认，否则免费整改\n\n> 雷虎审核是我们的标准流程，保障双方权益。';
+      return '**⚠️ 合规提醒（保护您的权益）：**\n\n'
+        + '**增项风险检查：**\n'
+        + '- 水电预估不足 | 风险：高 — 是否按实际米数结算？有无上限？\n'
+        + '- 防水面积缩水 | 风险：高 — 卫生间防水是否做到1.8m？\n'
+        + '- 拆改费用遗漏 | 风险：中 — 墙体拆除、垃圾清运是否包含？\n'
+        + '- 主材升级套路 | 风险：中 — 合同品牌型号是否明确？\n'
+        + '- 管理费/税金 | 风险：低 — 是否单独收取？比例多少？\n\n'
+        + '**合同签订建议：**\n'
+        + '1. 付款节点：开工≤30%、中期≤50%、竣工≥20%（法定建议）\n'
+        + '2. 增项条款：必须书面确认，单次不超总价10%\n'
+        + '3. 保修条款：基础工程≥2年，防水≥5年（法定最低）\n'
+        + '4. 材料品牌：合同中必须明确标注品牌、型号、环保等级\n\n'
+        + '**我们的承诺：**\n'
+        + '- 合同模板经法务审核，条款对等\n'
+        + '- 报价单无模糊项，所有材料明确标注\n'
+        + '- 增项需您书面签字确认，否则免费整改\n\n'
+        + '> 雷虎审核是我们的标准流程，保障双方权益。';
     },
     memo: function() {
       const days = 45 + Math.floor(Math.random()*15);
