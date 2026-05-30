@@ -480,7 +480,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def _read_body(self):
         length = int(self.headers.get("Content-Length", 0))
         raw = self.rfile.read(length) if length else b"{}"
-        return json.loads(raw.decode("utf-8"))
+        # 尝试UTF-8解码，失败则用GBK（Windows curl兼容）
+        try:
+            return json.loads(raw.decode("utf-8"))
+        except UnicodeDecodeError:
+            return json.loads(raw.decode("gbk", errors="replace"))
 
     def _json_response(self, data, code=200):
         body = json.dumps(data, ensure_ascii=False).encode("utf-8")
